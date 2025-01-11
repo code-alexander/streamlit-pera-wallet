@@ -1,6 +1,6 @@
 # pera_wallet
 
-Streamlit component that allows you to do X
+Streamlit component that allows you to Streamlit component that allows you to connect to Pera Wallet.
 
 ## Installation instructions
 
