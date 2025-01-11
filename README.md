@@ -2,7 +2,7 @@
 
 A Streamlit component that allows you to connect to Pera Wallet.
 
-The component source code is in: `streamlit-pera-wallet/template/`
+The component source code is in `streamlit-pera-wallet/template/`
 
 ## Installation instructions
 
