@@ -7,7 +7,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setuptools.setup(
     name="pera_wallet",
-    version="0.0.2",
+    version="0.0.3",
     author="code-alexander",
     author_email="",
     description="Streamlit component that allows you to connect to Pera Wallet.",
@@ -22,7 +22,7 @@ setuptools.setup(
         # By definition, a Custom Component depends on Streamlit.
         # If your component has other Python dependencies, list
         # them here.
-        "streamlit >= 0.63",
+        "streamlit >= 1.41",
     ],
     extras_require={
         "devel": [
