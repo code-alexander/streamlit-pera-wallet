@@ -59,6 +59,15 @@ template/**/package-lock.json
 template-reactless/**/yarn.lock
 template-reactless/**/package-lock.json
 
+template/__pycache__/
+template/.eggs/
+template/.pytest_cache/
+template/.ruff_cache/
+template/build/
+template/dist/
+template/pera_wallet.egg-info/
+template/venv/
+
 ########################################################################
 # JetBrains
 ########################################################################

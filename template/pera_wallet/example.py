@@ -1,16 +1,3 @@
-# pera_wallet
-
-Streamlit component that allows you to do X
-
-## Installation instructions
-
-```sh
-pip install pera-wallet
-```
-
-## Usage instructions
-
-```python
 import streamlit as st
 from pera_wallet import pera_wallet
 
@@ -53,4 +40,3 @@ account()
 
 if not st.session_state.account:
     st.stop()
-```
