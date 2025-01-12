@@ -22,7 +22,7 @@ if "transaction_id" not in st.session_state:
 
 NETWORK = "testnet"
 
-st.title("Chat")
+st.title("My App")
 
 
 def account():
