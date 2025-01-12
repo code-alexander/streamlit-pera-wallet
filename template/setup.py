@@ -7,7 +7,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setuptools.setup(
     name="pera_wallet",
-    version="0.0.4",
+    version="0.0.5",
     author="code-alexander",
     author_email="",
     description="Streamlit component that allows you to connect to Pera Wallet.",

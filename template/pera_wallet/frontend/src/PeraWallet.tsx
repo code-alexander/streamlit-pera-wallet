@@ -79,23 +79,37 @@ function MyComponent({ args, disabled, theme }: ComponentProps): ReactElement {
       Streamlit.setComponentValue([accountAddress, txid])
     } catch (error) {
       console.log("Transaction failed:", error)
-      toast.error("Transaction failed. Check the console for details.")
+      toast.error("Transaction failed.\nSee the console for more information.")
     }
   }, [network, transactionSigners])
 
   useEffect(() => {
-    Streamlit.setFrameHeight()
-    // Reconnect to the session when the component is mounted
-    peraWallet
-      .reconnectSession()
-      .then((accounts) => {
-        peraWallet.connector?.on("disconnect", handleDisconnectWalletClick)
-
-        if (accounts.length) {
-          setAccountAddress(accounts[0])
+    // If web crypto API is not available
+    if (!window.crypto?.subtle) {
+      Streamlit.setFrameHeight(100)
+      console.log(
+        "Wallet is only supported in secure contexts (HTTPS). `http://localhost` is also supported by some browsers. Reference: https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts"
+      )
+      toast.error(
+        "Wallet is only supported in secure contexts.\nSee the console for more information.",
+        {
+          duration: Infinity,
         }
-      })
-      .catch((e) => console.log(e))
+      )
+    } else {
+      Streamlit.setFrameHeight()
+      // Reconnect to the session when the component is mounted
+      peraWallet
+        .reconnectSession()
+        .then((accounts) => {
+          peraWallet.connector?.on("disconnect", handleDisconnectWalletClick)
+
+          if (accounts.length) {
+            setAccountAddress(accounts[0])
+          }
+        })
+        .catch((e) => console.log(e))
+    }
   }, [])
 
   useEffect(() => {
@@ -103,21 +117,34 @@ function MyComponent({ args, disabled, theme }: ComponentProps): ReactElement {
   }, [accountAddress])
 
   return (
-    <div style={{ display: "flex", gap: "10px" }}>
-      {isConnectedToPeraWallet && transactionsToSign && (
-        <button onClick={signTransactions}>Sign Transaction</button>
+    <>
+      {window.crypto?.subtle && (
+        <div style={{ display: "flex", gap: "10px" }}>
+          {isConnectedToPeraWallet && transactionsToSign && (
+            <button onClick={signTransactions}>Sign Transaction</button>
+          )}
+          <button
+            onClick={
+              isConnectedToPeraWallet
+                ? handleDisconnectWalletClick
+                : handleConnectWalletClick
+            }
+          >
+            {isConnectedToPeraWallet ? "Disconnect" : "Connect Pera Wallet"}
+          </button>
+        </div>
       )}
-      <button
-        onClick={
-          isConnectedToPeraWallet
-            ? handleDisconnectWalletClick
-            : handleConnectWalletClick
-        }
-      >
-        {isConnectedToPeraWallet ? "Disconnect" : "Connect Pera Wallet"}
-      </button>
-      {toastPosition && <Toaster position={toastPosition} />}
-    </div>
+      {toastPosition && (
+        <Toaster
+          position={toastPosition}
+          toastOptions={{
+            style: {
+              minWidth: "500px",
+            },
+          }}
+        />
+      )}
+    </>
   )
 
   function handleConnectWalletClick() {
