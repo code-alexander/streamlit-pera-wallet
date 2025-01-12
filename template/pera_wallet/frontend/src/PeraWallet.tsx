@@ -120,7 +120,7 @@ function MyComponent({ args, disabled, theme }: ComponentProps): ReactElement {
     <>
       {window.crypto?.subtle && (
         <div style={{ display: "flex", gap: "10px" }}>
-          {isConnectedToPeraWallet && transactionsToSign && (
+          {isConnectedToPeraWallet && transactionsToSign.length !== 0 && (
             <button onClick={signTransactions}>Sign Transaction</button>
           )}
           <button
