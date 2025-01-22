@@ -16,16 +16,13 @@
 
 
 button {
-    background-color: rgb(255, 255, 255);
-    border: 0;
-    border: 1px solid rgba(49, 51, 63, 0.2);
-    /* border-image: initial; */
-    
+    background-color: var(--background-color);
+    border: 1px solid color-mix(in srgb, var(--text-color), transparent 80%);
     border-radius: 0.5rem;
-
     padding: 0.25rem 0.75rem;
-
-} 
+    min-height: 2.5rem;
+    color: var(--text-color);
+}
 
 button:focus {
     outline: none;
