@@ -15,15 +15,29 @@ import algosdk from "algosdk"
 import { AlgorandClient } from "@algorandfoundation/algokit-utils"
 import toast, { Toaster } from "react-hot-toast"
 
+interface Args {
+  network: "mainnet" | "testnet"
+  transactionsToSign: string[]
+  frameHeight: number
+  toastPosition?:
+    | "top-left"
+    | "top-center"
+    | "top-right"
+    | "bottom-left"
+    | "bottom-center"
+    | "bottom-right"
+}
+
 /**
  * This is a React-based component template. The passed props are coming from the
  * Streamlit library. Your custom args can be accessed via the `args` props.
  */
-function MyComponent({ args, disabled, theme }: ComponentProps): ReactElement {
+function MyComponent({ args }: { args: Args }): ReactElement {
+  const { network, transactionsToSign, frameHeight, toastPosition } = args
+
+  const [transactions, setTransactions] = useState<string[]>(transactionsToSign)
   const [accountAddress, setAccountAddress] = useState<string | null>(null)
   const isConnectedToPeraWallet = !!accountAddress
-
-  const { network, transactionsToSign, frameHeight, toastPosition } = args
 
   const { algorand, peraWallet } = useMemo(() => {
     switch (network) {
@@ -51,13 +65,13 @@ function MyComponent({ args, disabled, theme }: ComponentProps): ReactElement {
   }, [network])
 
   const transactionSigners = useMemo(() => {
-    return transactionsToSign.map((item: string) => {
+    return transactions.map((item: string) => {
       return {
         txn: algosdk.decodeUnsignedTransaction(Buffer.from(item, "base64")),
-        signers: [accountAddress],
+        signers: [accountAddress ?? ""],
       }
     })
-  }, [transactionsToSign])
+  }, [accountAddress, transactions])
 
   const signTransactions = useCallback(async () => {
     Streamlit.setFrameHeight(150)
@@ -76,11 +90,15 @@ function MyComponent({ args, disabled, theme }: ComponentProps): ReactElement {
         .do()
       toast.success("Transaction confirmed!", { duration: 4000 })
       console.log(`Transaction ID: ${txid}`)
+      setTransactions([])
       Streamlit.setComponentValue([accountAddress, txid])
     } catch (error) {
       console.log("Transaction failed:", error)
       toast.error("Transaction failed.\nSee the console for more information.")
     }
+    setTimeout(() => {
+      Streamlit.setFrameHeight()
+    }, 4000)
   }, [network, transactionSigners])
 
   useEffect(() => {
@@ -120,7 +138,7 @@ function MyComponent({ args, disabled, theme }: ComponentProps): ReactElement {
     <>
       {window.crypto?.subtle && (
         <div style={{ display: "flex", gap: "10px" }}>
-          {isConnectedToPeraWallet && transactionsToSign.length !== 0 && (
+          {isConnectedToPeraWallet && transactions.length !== 0 && (
             <button
               onClick={signTransactions}
               style={{
@@ -169,11 +187,15 @@ function MyComponent({ args, disabled, theme }: ComponentProps): ReactElement {
           console.log(error)
         }
       })
-      .finally(() => Streamlit.setFrameHeight())
+      .finally(() => {
+        Streamlit.setFrameHeight()
+      })
   }
 
   function handleDisconnectWalletClick() {
-    peraWallet.disconnect()
+    if (peraWallet.connector?.peerId) {
+      peraWallet.disconnect()
+    }
     setAccountAddress(null)
   }
 }
