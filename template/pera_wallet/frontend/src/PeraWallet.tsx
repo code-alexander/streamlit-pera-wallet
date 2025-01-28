@@ -98,7 +98,7 @@ function MyComponent({ args }: { args: Args }): ReactElement {
     }
     setTimeout(() => {
       Streamlit.setFrameHeight()
-    }, 4000)
+    }, 8000)
   }, [network, transactionSigners])
 
   useEffect(() => {
