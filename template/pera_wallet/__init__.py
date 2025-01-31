@@ -96,7 +96,7 @@ def pera_wallet(
     transactions_to_sign: list[str] | None = None,
     frame_height: int = 800,
     key: str | None = None,
-) -> tuple[WalletState, TransactionState]:
+) -> AppState:
     """Create a new instance of "pera_wallet".
 
     Args:
