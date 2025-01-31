@@ -1,6 +1,9 @@
+"""`pera_wallet` package."""
+
 import os
+from typing import Literal, TypeAlias, TypedDict
+
 import streamlit.components.v1 as components
-from typing import Literal
 
 # Create a _RELEASE constant. We'll set this to False while we're developing
 # the component, and True when we're ready to package and distribute it.
@@ -24,19 +27,62 @@ if not _RELEASE:
         # We give the component a simple, descriptive name ("my_component"
         # does not fit this bill, so please choose something better for your
         # own component :)
-        "pera_wallet",
+        'pera_wallet',
         # Pass `url` here to tell Streamlit that the component will be served
         # by the local dev server that you run via `npm run start`.
         # (This is useful while your component is in development.)
-        url="http://localhost:3001",
+        url='http://localhost:3001',
     )
 else:
     # When we're distributing a production version of the component, we'll
     # replace the `url` param with `path`, and point it to the component's
     # build directory:
     parent_dir = os.path.dirname(os.path.abspath(__file__))
-    build_dir = os.path.join(parent_dir, "frontend/build")
-    _component_func = components.declare_component("pera_wallet", path=build_dir)
+    build_dir = os.path.join(parent_dir, 'frontend/build')
+    _component_func = components.declare_component('pera_wallet', path=build_dir)
+
+
+class WalletConnected(TypedDict):
+    """Wallet connected state."""
+
+    status: Literal['connected']
+    address: str
+
+
+class WalletDisconnected(TypedDict):
+    """Wallet not connected state."""
+
+    status: Literal['unavailable', 'disconnected']
+    address: None
+
+
+WalletState: TypeAlias = WalletConnected | WalletDisconnected
+
+
+class PendingTransaction(TypedDict):
+    """Pending transaction state."""
+
+    status: Literal['proposed', 'signed', 'submitted']
+    transaction_id: None
+
+
+class ConfirmedTransaction(TypedDict):
+    """Confirmed transaction state."""
+
+    status: Literal['confirmed']
+    transaction_id: str
+
+
+class FailedTransaction(TypedDict):
+    """Failed transaction state."""
+
+    status: Literal['failed']
+    msg: str
+
+
+TransactionState: TypeAlias = PendingTransaction | ConfirmedTransaction | FailedTransaction
+
+AppState: TypeAlias = tuple[WalletState, TransactionState | None]
 
 
 # Create a wrapper function for the component. This is an optional
@@ -46,43 +92,26 @@ else:
 # output value, and add a docstring for users.
 def pera_wallet(
     *,
-    network: Literal["mainnet", "testnet"] = "mainnet",
-    transactions_to_sign: list[str] = [],
+    network: Literal['mainnet', 'testnet'] = 'mainnet',
+    transactions_to_sign: list[str] | None = None,
     frame_height: int = 800,
-    toast_position: Literal[
-        "top-left",
-        "top-center",
-        "top-right",
-        "bottom-left",
-        "bottom-center",
-        "bottom-right",
-    ]
-    | None = "bottom-left",
     key: str | None = None,
-) -> tuple[str | None, str | None]:
+) -> tuple[WalletState, TransactionState]:
     """Create a new instance of "pera_wallet".
 
     Args:
-        network (Literal["mainnet", "testnet"], optional): Name of the Algorand network to connect to. Defaults to "mainnet".
-        transactions_to_sign (list[str], optional): Optional list of msgpack-encoded transactions to sign. Defaults to [].
+        network (Literal['mainnet', 'testnet'], optional): Name of the Algorand network to connect to. Defaults to 'mainnet'.
+        transactions_to_sign (list[str] | None, optional): Optional list of msgpack-encoded transactions to sign. Defaults to None.
         frame_height (int, optional): Frame height for the Pera Wallet auth modal. Defaults to 800.
-        toast_position (Literal["top-left", "top-center", "top-right", "bottom-left", "bottom-center", "bottom-right"], optional):
-            Position for the transaction toast notifications.
-            If None, toast will not be shown.
-            Defaults to "bottom-left".
         key (str | None, optional):
             An optional key that uniquely identifies this component. If this is
-            None, and the component's arguments are changed, the component will
-            be re-mounted in the Streamlit frontend and lose its current state.
-            Defaults to None.
+                None, and the component's arguments are changed, the component will
+                be re-mounted in the Streamlit frontend and lose its current state.
+                Defaults to None.
 
     Returns:
-        tuple[str | None, str | None]:
-            An (address, transaction ID) pair.
-            Address will be None if the user has not connected a wallet.
-            Transaction ID will be None if the user has not signed a transaction.
+        AppState: The wallet state and transaction state.
     """
-
     # Call through to our private component function. Arguments we pass here
     # will be sent to the frontend, where they'll be available in an "args"
     # dictionary.
@@ -91,9 +120,8 @@ def pera_wallet(
     # value of the component before the user has interacted with it.
     component_value = _component_func(
         network=network,
-        transactionsToSign=transactions_to_sign,
+        transactionsToSign=transactions_to_sign or [],
         frameHeight=frame_height,
-        toastPosition=toast_position,
         key=key,
         default=None,
     )

@@ -1,8 +1,4 @@
-import {
-  Streamlit,
-  withStreamlitConnection,
-  ComponentProps,
-} from "streamlit-component-lib"
+import { Streamlit, withStreamlitConnection } from "streamlit-component-lib"
 import React, {
   useEffect,
   useMemo,
@@ -13,31 +9,43 @@ import React, {
 import { PeraWalletConnect } from "@perawallet/connect"
 import algosdk from "algosdk"
 import { AlgorandClient } from "@algorandfoundation/algokit-utils"
-import toast, { Toaster } from "react-hot-toast"
 
 interface Args {
   network: "mainnet" | "testnet"
   transactionsToSign: string[]
   frameHeight: number
-  toastPosition?:
-    | "top-left"
-    | "top-center"
-    | "top-right"
-    | "bottom-left"
-    | "bottom-center"
-    | "bottom-right"
 }
+
+type WalletState =
+  | { status: "connected"; address: string }
+  | { status: "unavailable" | "disconnected"; address: null }
+
+type TransactionState =
+  | { status: "proposed" | "signed" | "submitted" }
+  | { status: "confirmed"; txId: string }
+  | { status: "failed"; msg: string }
 
 /**
  * This is a React-based component template. The passed props are coming from the
  * Streamlit library. Your custom args can be accessed via the `args` props.
  */
 function MyComponent({ args }: { args: Args }): ReactElement {
-  const { network, transactionsToSign, frameHeight, toastPosition } = args
+  const { network, transactionsToSign, frameHeight } = args
 
   const [transactions, setTransactions] = useState<string[]>(transactionsToSign)
   const [accountAddress, setAccountAddress] = useState<string | null>(null)
   const isConnectedToPeraWallet = !!accountAddress
+
+  const walletState = useMemo<WalletState>(() => {
+    const state: WalletState = accountAddress
+      ? { status: "connected", address: accountAddress }
+      : {
+          status: !window.crypto?.subtle ? "unavailable" : "disconnected",
+          address: null,
+        }
+    Streamlit.setComponentValue([state, null])
+    return state
+  }, [accountAddress])
 
   const { algorand, peraWallet } = useMemo(() => {
     switch (network) {
@@ -74,65 +82,44 @@ function MyComponent({ args }: { args: Args }): ReactElement {
   }, [accountAddress, transactions])
 
   const signTransactions = useCallback(async () => {
-    Streamlit.setFrameHeight(150)
-    toast("Please open the Pera Wallet app to sign this transaction.", {
-      icon: "✍️",
-    })
+    Streamlit.setComponentValue([walletState, { status: "proposed" }])
     try {
       const signedTransactions = await peraWallet.signTransaction([
         transactionSigners,
       ])
-      toast("Submitting transaction to the network...", {
-        icon: "✉️",
-      })
+
+      Streamlit.setComponentValue([walletState, { status: "submitted" }])
       const { txid } = await algorand.client.algod
         .sendRawTransaction(signedTransactions)
         .do()
-      toast.success("Transaction confirmed!", { duration: 4000 })
+
       console.log(`Transaction ID: ${txid}`)
       setTransactions([])
-      Streamlit.setComponentValue([accountAddress, txid])
+      Streamlit.setComponentValue([
+        walletState,
+        { status: "confirmed", txId: txid },
+      ])
     } catch (error) {
-      console.log("Transaction failed:", error)
-      toast.error("Transaction failed.\nSee the console for more information.")
+      const msg = error instanceof Error ? error.message : String(error)
+      console.log("Transaction failed:", msg)
+      Streamlit.setComponentValue([walletState, { status: "failed", msg: msg }])
     }
-    setTimeout(() => {
-      Streamlit.setFrameHeight()
-    }, 8000)
   }, [network, transactionSigners])
 
   useEffect(() => {
-    // If web crypto API is not available
-    if (!window.crypto?.subtle) {
-      Streamlit.setFrameHeight(100)
-      console.log(
-        "Wallet is only supported in secure contexts (HTTPS). `http://localhost` is also supported by some browsers. Reference: https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts"
-      )
-      toast.error(
-        "Wallet is only supported in secure contexts.\nSee the console for more information.",
-        {
-          duration: Infinity,
+    Streamlit.setFrameHeight()
+    // Reconnect to the session when the component is mounted
+    peraWallet
+      .reconnectSession()
+      .then((accounts) => {
+        peraWallet.connector?.on("disconnect", handleDisconnectWalletClick)
+
+        if (accounts.length) {
+          setAccountAddress(accounts[0])
         }
-      )
-    } else {
-      Streamlit.setFrameHeight()
-      // Reconnect to the session when the component is mounted
-      peraWallet
-        .reconnectSession()
-        .then((accounts) => {
-          peraWallet.connector?.on("disconnect", handleDisconnectWalletClick)
-
-          if (accounts.length) {
-            setAccountAddress(accounts[0])
-          }
-        })
-        .catch((e) => console.log(e))
-    }
+      })
+      .catch((e) => console.log(e))
   }, [])
-
-  useEffect(() => {
-    Streamlit.setComponentValue([accountAddress, null])
-  }, [accountAddress])
 
   return (
     <>
@@ -159,16 +146,6 @@ function MyComponent({ args }: { args: Args }): ReactElement {
             {isConnectedToPeraWallet ? "Disconnect" : "Connect Pera Wallet"}
           </button>
         </div>
-      )}
-      {toastPosition && (
-        <Toaster
-          position={toastPosition}
-          toastOptions={{
-            style: {
-              minWidth: "500px",
-            },
-          }}
-        />
       )}
     </>
   )

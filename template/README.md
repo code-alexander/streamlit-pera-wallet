@@ -1,6 +1,6 @@
 # pera_wallet
 
-Streamlit component that allows you to Streamlit component that allows you to connect to Pera Wallet.
+A Streamlit component to connect to Pera Wallet.
 
 ## Installation instructions
 
@@ -12,45 +12,67 @@ pip install pera-wallet
 
 ```python
 import streamlit as st
+
 from pera_wallet import pera_wallet
 
-if "account" not in st.session_state:
-    st.session_state.account = None
+if 'wallet' not in st.session_state:
+    st.session_state.wallet = {'status': 'disconnected', 'address': None}
 
-if "transaction_id" not in st.session_state:
-    st.session_state.transaction_id = None
+if 'txn' not in st.session_state:
+    st.session_state.txn = None
 
-NETWORK = "testnet"
+NETWORK = 'testnet'
 
-st.title("My App")
+st.title('My App')
 
 
 def account():
-    with st.expander("Account", expanded=True):
+    with st.expander('Account', expanded=True):
         # Add msgpack-encoded transactions to sign, if needed
         transactions_to_sign = []
 
         wallet = pera_wallet(
             network=NETWORK,
             transactions_to_sign=transactions_to_sign,
-            key="pera_wallet",
+            key='pera_wallet',
         )
         if wallet is not None:
-            st.session_state.account, st.session_state.transaction_id = wallet
+            wallet_state, txn_state = wallet
+            st.session_state.wallet = wallet_state
+            st.session_state.txn = txn_state
 
-        st.caption(
-            f"Connected address: {st.session_state.account}"
-            if st.session_state.account
-            else "Connect your wallet to begin."
-        )
-        if st.session_state.transaction_id:
+            if st.session_state.txn:
+                match st.session_state.txn:
+                    case {'status': 'proposed'}:
+                        st.info(
+                            'Please open the Pera Wallet app to sign this transaction.',
+                            icon='✍️',
+                        )
+                    case {'status': 'submitted'}:
+                        st.info(
+                            'Transaction submitted. Waiting for confirmation.',
+                            icon='⏳',
+                        )
+                    case {'status': 'confirmed', 'txId': tx_id}:
+                        st.success(
+                            f'Transaction confirmed! View your transaction on [lora](https://lora.algokit.io/{NETWORK}/transaction/{tx_id}) the explorer.',
+                            icon='🥳',
+                        )
+                    case {'status': 'failed', 'msg': msg}:
+                        st.error(f'Transaction failed: {msg}', icon='😞')
+
+        if st.session_state.wallet['status'] == 'unavailable':
+            st.error('Wallet is only available in secure contexts (HTTPS).')
+        else:
             st.caption(
-                f"View your transaction on [lora](https://lora.algokit.io/{NETWORK}/transaction/{st.session_state.transaction_id}) the explorer 🥳"
+                f'Connected address: {st.session_state.wallet["address"]}'
+                if st.session_state.wallet['status'] == 'connected'
+                else 'Connect your wallet to begin.'
             )
 
 
 account()
 
-if not st.session_state.account:
+if not st.session_state.wallet['address']:
     st.stop()
 ```

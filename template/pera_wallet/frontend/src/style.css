@@ -57,3 +57,107 @@ button:hover {
     /* box-shadow: 0 0 20px rgba(104, 85, 224, 0.6); */
     background-color: var(--primary-color);
 }
+
+
+
+.vertical-stepper {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1rem;
+}
+
+.step-item {
+    display: flex;
+    position: relative;
+}
+
+.step-indicator {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    background-color: var(--background-color);
+    border: 2px solid color-mix(in srgb, var(--text-color), transparent 80%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-right: 1rem;
+}
+
+.step-item.done .step-indicator,
+.step-item.success .step-indicator,
+.step-item.failure .step-indicator {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.step-item.doing .step-indicator {
+    border-color: var(--primary-color);
+}
+
+.check-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: (var(--text-color));
+}
+
+.cross-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: (var(--text-color));
+}
+
+.doing-dot {
+    width: 0.75rem;
+    height: 0.75rem;
+    background-color: var(--primary-color);
+    border-radius: 50%;
+}
+
+.step-content {
+    flex: 1;
+}
+
+.step-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem;
+    color: color-mix(in srgb, var(--text-color), transparent 80%);
+}
+
+.step-description {
+    font-size: 0.875rem;
+    color: color-mix(in srgb, var(--text-color), transparent 80%);
+    margin: 0;
+}
+
+.step-connector {
+    position: absolute;
+    left: 1rem;
+    top: 2rem;
+    bottom: -1.5rem;
+    width: 2px;
+    background-color: color-mix(in srgb, var(--text-color), transparent 80%);
+}
+
+
+.step-item.done .step-connector,
+.step-item.success .step-connector,
+.step-item.failure .step-connector {
+    background-color: var(--primary-color);
+}
+
+.step-item.done .step-title,
+.step-item.success .step-title,
+.step-item.failure .step-title,
+.step-item.doing .step-title {
+    color: var(--text-color);
+}
+
+.step-item.done .step-description,
+.step-item.success .step-description,
+.step-item.failure .step-description,
+.step-item.doing .step-description {
+    color: var(--text-color);
+}

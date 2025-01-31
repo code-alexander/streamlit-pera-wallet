@@ -12,14 +12,13 @@ from tempfile import TemporaryFile
 
 import requests
 
-
 LOGGER = logging.getLogger(__file__)
 
 
 def _find_free_port():
     """Find and return a free port on the local machine."""
     with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
-        s.bind(("", 0))  # 0 means that the OS chooses a random port
+        s.bind(('', 0))  # 0 means that the OS chooses a random port
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         return int(s.getsockname()[1])  # [1] contains the randomly selected port number
 
@@ -63,7 +62,7 @@ class AsyncSubprocess:
 
         return stdout
 
-    def __enter__(self) -> "AsyncSubprocess":
+    def __enter__(self) -> 'AsyncSubprocess':
         """Start the subprocess when entering the context."""
         self.start()
         return self
@@ -77,8 +76,8 @@ class AsyncSubprocess:
         # file. We do this instead of using subprocess.PIPE (which causes the
         # Popen object to capture the output to its own internal buffer),
         # because large amounts of output can cause it to deadlock.
-        self._stdout_file = TemporaryFile("w+")
-        LOGGER.info("Running command: %s", shlex.join(self.args))
+        self._stdout_file = TemporaryFile('w+')
+        LOGGER.info('Running command: %s', shlex.join(self.args))
         self._proc = subprocess.Popen(
             self.args,
             cwd=self.cwd,
@@ -101,9 +100,7 @@ class AsyncSubprocess:
 class StreamlitRunner:
     """A context manager for running Streamlit scripts."""
 
-    def __init__(
-        self, script_path: os.PathLike, server_port: typing.Optional[int] = None
-    ):
+    def __init__(self, script_path: os.PathLike, server_port: typing.Optional[int] = None):
         """Initialize a StreamlitRunner instance.
 
         Args:
@@ -114,7 +111,7 @@ class StreamlitRunner:
         self.server_port = server_port
         self.script_path = script_path
 
-    def __enter__(self) -> "StreamlitRunner":
+    def __enter__(self) -> 'StreamlitRunner':
         """Start the Streamlit server when entering the context."""
         self.start()
         return self
@@ -129,20 +126,20 @@ class StreamlitRunner:
         self._process = AsyncSubprocess(
             [
                 sys.executable,
-                "-m",
-                "streamlit",
-                "run",
+                '-m',
+                'streamlit',
+                'run',
                 str(self.script_path),
-                f"--server.port={self.server_port}",
-                "--server.headless=true",
-                "--browser.gatherUsageStats=false",
-                "--global.developmentMode=false",
+                f'--server.port={self.server_port}',
+                '--server.headless=true',
+                '--browser.gatherUsageStats=false',
+                '--global.developmentMode=false',
             ]
         )
         self._process.start()
         if not self.is_server_running():
             self._process.stop()
-            raise RuntimeError("Application failed to start")
+            raise RuntimeError('Application failed to start')
 
     def stop(self):
         """Stop the Streamlit server and close resources."""
@@ -161,8 +158,8 @@ class StreamlitRunner:
             start_time = time.time()
             while True:
                 with contextlib.suppress(requests.RequestException):
-                    response = http_session.get(self.server_url + "/_stcore/health")
-                    if response.text == "ok":
+                    response = http_session.get(self.server_url + '/_stcore/health')
+                    if response.text == 'ok':
                         return True
                 time.sleep(3)
                 if time.time() - start_time > 60 * timeout:
@@ -172,5 +169,5 @@ class StreamlitRunner:
     def server_url(self) -> str:
         """Get the URL of the Streamlit server."""
         if not self.server_port:
-            raise RuntimeError("Unknown server port")
-        return f"http://localhost:{self.server_port}"
+            raise RuntimeError('Unknown server port')
+        return f'http://localhost:{self.server_port}'
