@@ -96,7 +96,7 @@ def pera_wallet(
     transactions_to_sign: list[str] | None = None,
     frame_height: int = 800,
     key: str | None = None,
-) -> AppState:
+) -> AppState | None:
     """Create a new instance of "pera_wallet".
 
     Args:
@@ -110,7 +110,7 @@ def pera_wallet(
                 Defaults to None.
 
     Returns:
-        AppState: The wallet state and transaction state.
+        AppState | None: The wallet state and transaction state, or None if the component is not mounted.
     """
     # Call through to our private component function. Arguments we pass here
     # will be sent to the frontend, where they'll be available in an "args"
