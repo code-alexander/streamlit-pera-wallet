@@ -1,8 +1,8 @@
 """`pera_wallet` package."""
 
 import os
-from typing import Literal, TypeAlias, TypedDict
-
+from typing import Literal, TypeAlias
+from dataclasses import dataclass
 import streamlit.components.v1 as components
 
 # Create a _RELEASE constant. We'll set this to False while we're developing
@@ -27,62 +27,107 @@ if not _RELEASE:
         # We give the component a simple, descriptive name ("my_component"
         # does not fit this bill, so please choose something better for your
         # own component :)
-        'pera_wallet',
+        "pera_wallet",
         # Pass `url` here to tell Streamlit that the component will be served
         # by the local dev server that you run via `npm run start`.
         # (This is useful while your component is in development.)
-        url='http://localhost:3001',
+        url="http://localhost:3001",
     )
 else:
     # When we're distributing a production version of the component, we'll
     # replace the `url` param with `path`, and point it to the component's
     # build directory:
     parent_dir = os.path.dirname(os.path.abspath(__file__))
-    build_dir = os.path.join(parent_dir, 'frontend/build')
-    _component_func = components.declare_component('pera_wallet', path=build_dir)
+    build_dir = os.path.join(parent_dir, "frontend/build")
+    _component_func = components.declare_component("pera_wallet", path=build_dir)
 
 
-class WalletConnected(TypedDict):
+@dataclass
+class WalletConnected:
     """Wallet connected state."""
 
-    status: Literal['connected']
+    status: Literal["connected"]
     address: str
 
 
-class WalletDisconnected(TypedDict):
+@dataclass
+class WalletDisconnected:
     """Wallet not connected state."""
 
-    status: Literal['unavailable', 'disconnected']
+    status: Literal["unavailable", "disconnected"]
     address: None
 
 
 WalletState: TypeAlias = WalletConnected | WalletDisconnected
 
 
-class PendingTransaction(TypedDict):
+@dataclass
+class TransactionPending:
     """Pending transaction state."""
 
-    status: Literal['proposed', 'signed', 'submitted']
+    status: Literal["proposed", "signed", "submitted"]
     transaction_id: None
 
 
-class ConfirmedTransaction(TypedDict):
+@dataclass
+class TransactionConfirmed:
     """Confirmed transaction state."""
 
-    status: Literal['confirmed']
+    status: Literal["confirmed"]
     transaction_id: str
 
 
-class FailedTransaction(TypedDict):
+@dataclass
+class TransactionFailed:
     """Failed transaction state."""
 
-    status: Literal['failed']
+    status: Literal["failed"]
     msg: str
 
 
-TransactionState: TypeAlias = PendingTransaction | ConfirmedTransaction | FailedTransaction
+TransactionState: TypeAlias = (
+    TransactionPending | TransactionConfirmed | TransactionFailed
+)
 
 AppState: TypeAlias = tuple[WalletState, TransactionState | None]
+
+
+def parse_wallet(wallet: dict) -> WalletState:
+    """Parses the wallet state from the wallet dict.
+
+    Args:
+        wallet (dict): The wallet dict returned from the component.
+
+    Returns:
+        WalletState: The wallet state.
+    """
+    match wallet:
+        case {"status": "connected", "address": address}:
+            return WalletConnected(status="connected", address=address)
+        case {"status": "unavailable"}:
+            return WalletDisconnected(status="unavailable", address=None)
+        case _:
+            return WalletDisconnected(status="disconnected", address=None)
+
+
+def parse_txn(txn: dict) -> TransactionState | None:
+    """Parses the transaction state from the txn dict.
+
+    Args:
+        txn (dict): The txn dict returned from the component.
+
+    Returns:
+        TransactionState | None: The transaction state or None.
+    """
+    match txn:
+        case {"status": "proposed" | "signed" | "submitted" as status}:
+            return TransactionPending(status=status, transaction_id=None)
+        case {"status": "confirmed", "transaction_id": tx_id}:
+            return TransactionConfirmed(status="confirmed", transaction_id=tx_id)
+        case {"status": "failed", "msg": msg}:
+            return TransactionFailed(status="failed", msg=msg)
+        case _:
+            return None
 
 
 # Create a wrapper function for the component. This is an optional
@@ -92,7 +137,7 @@ AppState: TypeAlias = tuple[WalletState, TransactionState | None]
 # output value, and add a docstring for users.
 def pera_wallet(
     *,
-    network: Literal['mainnet', 'testnet'] = 'mainnet',
+    network: Literal["mainnet", "testnet"] = "mainnet",
     transactions_to_sign: list[str] | None = None,
     frame_height: int = 800,
     key: str | None = None,
@@ -125,6 +170,5 @@ def pera_wallet(
         key=key,
         default=None,
     )
-    if component_value is None:
-        return WalletDisconnected(status='disconnected', address=None), None
-    return component_value
+    wallet, txn = component_value or ({}, {})
+    return parse_wallet(wallet), parse_txn(txn)
