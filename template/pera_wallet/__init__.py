@@ -96,7 +96,7 @@ def pera_wallet(
     transactions_to_sign: list[str] | None = None,
     frame_height: int = 800,
     key: str | None = None,
-) -> AppState | None:
+) -> AppState:
     """Create a new instance of "pera_wallet".
 
     Args:
@@ -110,7 +110,7 @@ def pera_wallet(
                 Defaults to None.
 
     Returns:
-        AppState | None: The wallet state and transaction state, or None if the component is not mounted.
+        AppState: The wallet state and transaction state.
     """
     # Call through to our private component function. Arguments we pass here
     # will be sent to the frontend, where they'll be available in an "args"
@@ -125,7 +125,6 @@ def pera_wallet(
         key=key,
         default=None,
     )
-
-    # We could modify the value returned from the component if we wanted.
-    # There's no need to do this in our simple example - but it's an option.
+    if component_value is None:
+        return WalletDisconnected(status='disconnected', address=None), None
     return component_value
